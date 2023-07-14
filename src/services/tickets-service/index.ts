@@ -1,8 +1,10 @@
-import { Ticket, TicketType, TicketStatus } from '@prisma/client';
-import { notFoundError } from '@/errors';
+import { TicketType, TicketStatus } from '@prisma/client';
+import { CreateTicket, GetTicket } from '@/protocols';
+
 import ticketRepository from '@/repositories/ticket-repository';
 import enrollmentRepository from '@/repositories/enrollment-repository';
-import { CreateTicket } from '@/protocols';
+
+import { notFoundError } from '@/errors';
 
 async function getAllTicketsTypes(): Promise<TicketType[]> {
   const ticketsTypes = await ticketRepository.findAllTicketsTypes();
@@ -35,13 +37,17 @@ async function createTicket(userId: number, ticketTypeId: number): Promise<GetTi
   return ticket;
 }
 
-type GetTicket = Ticket & {
-  TicketType: TicketType;
-};
+async function getTicketById(id: number) {
+  const ticket = await ticketRepository.findTicketById(id);
+  if (!ticket) throw notFoundError();
+
+  return ticket;
+}
 
 const ticketsService = {
   getAllTicketsTypes,
   getTicketByUser,
+  getTicketById,
   createTicket,
 };
 

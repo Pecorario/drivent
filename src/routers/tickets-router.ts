@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken, validateBody } from '@/middlewares';
 import { getTicketByUser, createTicket, getAllTicketsTypes } from '@/controllers';
-import { createTicketSchema } from '@/schemas/tickets-schemas';
+import { createTicketSchema } from '@/schemas';
 
 const ticketsRouter = Router();
 
