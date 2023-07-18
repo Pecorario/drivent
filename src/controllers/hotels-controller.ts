@@ -3,12 +3,19 @@ import httpStatus from 'http-status';
 import { AuthenticatedRequest } from '@/middlewares';
 import hotelsService from '@/services/hotels-service';
 
-export async function getAllHotels(_req: AuthenticatedRequest, res: Response) {
+export async function getAllHotels(req: AuthenticatedRequest, res: Response) {
+  const { userId } = req;
   try {
+    await hotelsService.checkEnrollmentAndTicketByUser(userId);
     const hotels = await hotelsService.getAllHotels();
 
     return res.status(httpStatus.OK).send(hotels);
   } catch (error) {
+    if (error.name === 'PaymentError') {
+      return res.status(httpStatus.PAYMENT_REQUIRED).send({
+        message: error.message,
+      });
+    }
     return res.sendStatus(httpStatus.NOT_FOUND);
   }
 }
@@ -25,6 +32,12 @@ export async function getHotelById(req: AuthenticatedRequest, res: Response) {
 
     return res.status(httpStatus.OK).send(hotel);
   } catch (error) {
+    if (error.name === 'PaymentError') {
+      return res.status(httpStatus.PAYMENT_REQUIRED).send({
+        message: error.message,
+      });
+    }
+
     return res.sendStatus(httpStatus.NOT_FOUND);
   }
 }
