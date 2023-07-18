@@ -21,6 +21,7 @@ export async function getAllHotels(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function getHotelById(req: AuthenticatedRequest, res: Response) {
+  const { userId } = req;
   const hotelId = Number(req.params.hotelId);
 
   if (isNaN(hotelId) || !hotelId) {
@@ -28,6 +29,7 @@ export async function getHotelById(req: AuthenticatedRequest, res: Response) {
   }
 
   try {
+    await hotelsService.checkEnrollmentAndTicketByUser(userId);
     const hotel = await hotelsService.getHotelById(hotelId);
 
     return res.status(httpStatus.OK).send(hotel);
