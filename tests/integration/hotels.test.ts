@@ -1,6 +1,6 @@
 import faker from '@faker-js/faker';
 import httpStatus from 'http-status';
-import * as jwt from 'jsonwebtoken';
+// import * as jwt from 'jsonwebtoken';
 import supertest from 'supertest';
 import { TicketStatus } from '@prisma/client';
 import {
@@ -12,7 +12,7 @@ import {
   createTicket,
 } from '../factories';
 import { cleanDb, generateValidToken } from '../helpers';
-import { prisma } from '@/config';
+// import { prisma } from '@/config';
 import app, { init } from '@/app';
 
 beforeAll(async () => {
