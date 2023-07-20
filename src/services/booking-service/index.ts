@@ -6,7 +6,8 @@ import { notFoundError, roomNotAvailableError } from '@/errors';
 
 async function checkTicketValidate(userId: number) {
   const ticket = await ticketsService.getTicketByUser(userId);
-  const hasValidTicket = ticket && !ticket.TicketType.isRemote && ticket.status === TicketStatus.PAID;
+  const hasValidTicket =
+    ticket && !ticket.TicketType.isRemote && ticket.status === TicketStatus.PAID && ticket.TicketType.includesHotel;
 
   if (!hasValidTicket) throw roomNotAvailableError();
 }
