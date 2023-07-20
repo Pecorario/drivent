@@ -15,25 +15,9 @@ async function createRoom(data: CreateRoom) {
   return room;
 }
 
-async function bookingRoom(id: number) {
-  const room = await roomRepository.bookingRoom(id);
-  if (!room) throw notFoundError();
-
-  return room;
-}
-
-async function refundRoom(id: number) {
-  const room = await roomRepository.refundRoom(id);
-  if (!room) throw notFoundError();
-
-  return room;
-}
-
 const roomsService = {
   getRoomById,
   createRoom,
-  bookingRoom,
-  refundRoom,
 };
 
 export default roomsService;

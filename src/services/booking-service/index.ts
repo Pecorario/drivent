@@ -15,7 +15,9 @@ async function checkTicketValidate(userId: number) {
 async function getRoomWhenIsValid(roomId: number) {
   const room = await roomsService.getRoomById(roomId);
   if (!room) throw notFoundError();
-  if (room.capacity === 0) throw roomNotAvailableError();
+
+  const bookings = await bookingRepository.findBookingsByRoomId(roomId);
+  if (room.capacity === bookings.length) throw roomNotAvailableError();
 
   return room;
 }
@@ -29,10 +31,9 @@ async function getBookingByUserId(userId: number) {
 
 async function createBooking(userId: number, roomId: number) {
   await checkTicketValidate(userId);
-  const room = await getRoomWhenIsValid(roomId);
+  await getRoomWhenIsValid(roomId);
 
   const { id } = await bookingRepository.createBooking(userId, roomId);
-  await roomsService.bookingRoom(room.id);
   return id;
 }
 
@@ -44,12 +45,9 @@ async function updateBooking(userId: number, roomId: number, bookingId: number) 
 
   if (userBooking.id !== booking.id) throw roomNotAvailableError();
 
-  const room = await getRoomWhenIsValid(roomId);
+  await getRoomWhenIsValid(roomId);
 
   const { id } = await bookingRepository.updateBooking(bookingId, roomId);
-  await roomsService.bookingRoom(room.id);
-  await roomsService.refundRoom(booking.Room.id);
-
   return id;
 }
 

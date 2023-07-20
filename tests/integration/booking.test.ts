@@ -12,8 +12,6 @@ import {
   createEnrollmentWithAddress,
   createTicket,
   createBooking,
-  getCapacityOfRoom,
-  bookingRoom,
 } from '../factories';
 import { cleanDb, generateValidToken } from '../helpers';
 import { prisma } from '@/config';
@@ -130,12 +128,16 @@ describe('POST /booking', () => {
 
     it('should respond with status 403 when room is full', async () => {
       const user = await createUser();
+      const anotherUser = await createUser();
       const token = await generateValidToken(user);
       const enrollment = await createEnrollmentWithAddress(user);
+      const anotherEnrollment = await createEnrollmentWithAddress(anotherUser);
       const ticketType = await createTicketType(false, true);
       await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
+      await createTicket(anotherEnrollment.id, ticketType.id, TicketStatus.PAID);
       const hotel = await createHotel();
-      const room = await createRoom(hotel.id, 0);
+      const room = await createRoom(hotel.id, 1);
+      await createBooking(anotherUser.id, room.id);
 
       const response = await server.post('/booking').set('Authorization', `Bearer ${token}`).send({ roomId: room.id });
       expect(response.status).toEqual(httpStatus.FORBIDDEN);
@@ -212,23 +214,6 @@ describe('POST /booking', () => {
       expect(beforeCount).toEqual(0);
       expect(afterCount).toEqual(1);
     });
-
-    it('should decrement capacity of room when booking', async () => {
-      const user = await createUser();
-      const token = await generateValidToken(user);
-      const enrollment = await createEnrollmentWithAddress(user);
-      const ticketType = await createTicketType(false, true);
-      await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
-      const hotel = await createHotel();
-      const room = await createRoom(hotel.id, 10);
-
-      const { capacity: beforeCount } = await getCapacityOfRoom(room.id);
-      await server.post('/booking').set('Authorization', `Bearer ${token}`).send({ roomId: room.id });
-      const { capacity: afterCount } = await getCapacityOfRoom(room.id);
-
-      expect(beforeCount).toEqual(room.capacity);
-      expect(afterCount).toEqual(room.capacity - 1);
-    });
   });
 });
 
@@ -274,7 +259,6 @@ describe('PUT /booking/:bookingId', () => {
       const hotel = await createHotel();
       const room = await createRoom(hotel.id, 10);
       await createBooking(user.id, room.id);
-      await bookingRoom(room.id);
 
       const response = await server.put('/booking/1').set('Authorization', `Bearer ${token}`).send({ roomId: '1' });
       expect(response.status).toEqual(httpStatus.NOT_FOUND);
@@ -289,7 +273,6 @@ describe('PUT /booking/:bookingId', () => {
       const hotel = await createHotel();
       const room = await createRoom(hotel.id, 10);
       const booking = await createBooking(user.id, room.id);
-      await bookingRoom(room.id);
 
       const response = await server
         .put(`/booking/${booking.id}`)
@@ -299,16 +282,20 @@ describe('PUT /booking/:bookingId', () => {
     });
 
     it('should respond with status 403 when room is full', async () => {
+      const anotherUser = await createUser();
+      const anotherEnrollment = await createEnrollmentWithAddress(anotherUser);
       const user = await createUser();
       const token = await generateValidToken(user);
       const enrollment = await createEnrollmentWithAddress(user);
       const ticketType = await createTicketType(false, true);
       await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
       const hotel = await createHotel();
-      const room = await createRoom(hotel.id, 10);
-      const newRoom = await createRoom(hotel.id, 0);
+      const room = await createRoom(hotel.id, 3);
+      const newRoom = await createRoom(hotel.id, 1);
       const booking = await createBooking(user.id, room.id);
-      await bookingRoom(room.id);
+
+      await createTicket(anotherEnrollment.id, ticketType.id, TicketStatus.PAID);
+      await createBooking(anotherUser.id, newRoom.id);
 
       const response = await server
         .put(`/booking/${booking.id}`)
@@ -327,7 +314,6 @@ describe('PUT /booking/:bookingId', () => {
       const room = await createRoom(hotel.id, 2);
       const newRoom = await createRoom(hotel.id, 3);
       const booking = await createBooking(user.id, room.id);
-      await bookingRoom(room.id);
 
       const response = await server
         .put(`/booking/${booking.id}`)
@@ -337,32 +323,6 @@ describe('PUT /booking/:bookingId', () => {
       expect(response.body).toEqual({
         bookingId: booking.id,
       });
-    });
-
-    it('should decrement capacity of new room and increment capacity of old room when booking', async () => {
-      const user = await createUser();
-      const token = await generateValidToken(user);
-      const enrollment = await createEnrollmentWithAddress(user);
-      const ticketType = await createTicketType(false, true);
-      await createTicket(enrollment.id, ticketType.id, TicketStatus.PAID);
-      const hotel = await createHotel();
-      const room = await createRoom(hotel.id, 2);
-      const newRoom = await createRoom(hotel.id, 3);
-      const booking = await createBooking(user.id, room.id);
-      await bookingRoom(room.id);
-
-      const { capacity: beforeCountNewRoom } = await getCapacityOfRoom(newRoom.id);
-      const { capacity: beforeCountOldRoom } = await getCapacityOfRoom(room.id);
-
-      await server.put(`/booking/${booking.id}`).set('Authorization', `Bearer ${token}`).send({ roomId: newRoom.id });
-
-      const { capacity: afterCountNewRoom } = await getCapacityOfRoom(newRoom.id);
-      const { capacity: afterCountOldRoom } = await getCapacityOfRoom(room.id);
-
-      expect(beforeCountNewRoom).toEqual(newRoom.capacity);
-      expect(afterCountNewRoom).toEqual(newRoom.capacity - 1);
-      expect(beforeCountOldRoom).toEqual(room.capacity - 1);
-      expect(afterCountOldRoom).toEqual(room.capacity);
     });
   });
 });
