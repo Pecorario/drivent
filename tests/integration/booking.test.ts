@@ -242,6 +242,14 @@ describe('PUT /booking/:bookingId', () => {
   });
 
   describe('when token is valid', () => {
+    it('should respond with status 400 when ser booking id is not a number', async () => {
+      const user = await createUser();
+      const token = await generateValidToken(user);
+
+      const response = await server.put('/booking/teste').set('Authorization', `Bearer ${token}`).send({ roomId: '1' });
+      expect(response.status).toEqual(httpStatus.BAD_REQUEST);
+    });
+
     it('should respond with status 403 when user does not have booking', async () => {
       const user = await createUser();
       const token = await generateValidToken(user);
